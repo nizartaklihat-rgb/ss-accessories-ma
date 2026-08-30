@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/moroccanCities';
 import { 
   Sparkles, Eye, ShoppingBag, Gift, 
-  Check, ArrowRight, Star 
+  Check, ArrowRight, Star, Plus 
 } from 'lucide-react';
 
 export const ProductCatalog = () => {
@@ -11,13 +11,15 @@ export const ProductCatalog = () => {
     t,
     isRTL,
     products,
+    isLoadingProducts,
     addToCart,
     setSelectedProductDetail,
     setIsPackBuilderOpen,
     activeCategoryFilter,
     setActiveCategoryFilter,
     searchQuery,
-    setSearchQuery
+    setSearchQuery,
+    openAdminPortal
   } = useStore();
 
   const [sortBy, setSortBy] = useState('featured');
@@ -30,7 +32,7 @@ export const ProductCatalog = () => {
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch = !query || 
         product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query) ||
+        (product.description && product.description.toLowerCase().includes(query)) ||
         (product.material && product.material.toLowerCase().includes(query));
 
       return matchesCategory && matchesSearch;
@@ -86,7 +88,7 @@ export const ProductCatalog = () => {
 
           <button
             onClick={() => setIsPackBuilderOpen(true)}
-            className="relative z-10 shrink-0 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white text-[#872B44] hover:bg-[#FFF5F7] font-semibold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+            className="relative z-10 shrink-0 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white text-[#872B44] hover:bg-[#FFF5F7] font-semibold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-[#E26886]" />
             <span>{t('bannerCustomBtn')}</span>
@@ -111,7 +113,7 @@ export const ProductCatalog = () => {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategoryFilter(cat.id)}
-                  className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 ${
+                  className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                     isActive
                       ? 'bg-[#872B44] text-white font-semibold shadow-md'
                       : 'bg-white text-[#4A3B3E] hover:bg-[#FFF0F4] border border-[#F8B4C5]/40'
@@ -146,22 +148,43 @@ export const ProductCatalog = () => {
 
         </div>
 
-        {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-[#F8B4C5]/30 p-8">
-            <Sparkles className="w-10 h-10 text-[#E26886] mx-auto mb-3" />
+        {/* LOADING SHIMMER SKELETON (Prevents any flash of default demo photos) */}
+        {isLoadingProducts && products.length === 0 ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-2xl sm:rounded-3xl bg-white border border-[#F8B4C5]/30 p-3 sm:p-4 shadow-xs animate-pulse space-y-3">
+                <div className="aspect-square rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#FDE8EE] to-[#FBD2DC]/50 w-full" />
+                <div className="h-4 bg-[#FDE8EE] rounded-full w-3/4" />
+                <div className="h-3 bg-[#FDE8EE]/60 rounded-full w-1/2" />
+                <div className="pt-2 border-t border-[#F8B4C5]/20 flex justify-between items-center">
+                  <div className="h-5 bg-[#FDE8EE] rounded-full w-16" />
+                  <div className="h-7 bg-[#FDE8EE] rounded-full w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          /* Products Empty State */
+          <div className="text-center py-16 bg-white rounded-3xl border border-[#F8B4C5]/30 p-8 space-y-3">
+            <Sparkles className="w-10 h-10 text-[#E26886] mx-auto mb-1" />
             <h3 className="font-serif font-bold text-lg text-[#1E1618]">{t('noProductsFound')}</h3>
-            <button
-              onClick={() => {
-                setActiveCategoryFilter('all');
-                setSearchQuery('');
-              }}
-              className="mt-4 px-4 py-2 rounded-full bg-[#872B44] text-white text-xs font-semibold"
-            >
-              {t('viewAllProducts')}
-            </button>
+            <p className="text-xs text-[#785C63]">
+              {products.length === 0 ? "Votre catalogue est prêt à accueillir vos pièces." : "Aucun article ne correspond à votre recherche."}
+            </p>
+            {products.length > 0 && (
+              <button
+                onClick={() => {
+                  setActiveCategoryFilter('all');
+                  setSearchQuery('');
+                }}
+                className="mt-3 px-5 py-2.5 rounded-full bg-[#872B44] text-white text-xs font-semibold cursor-pointer"
+              >
+                {t('viewAllProducts')}
+              </button>
+            )}
           </div>
         ) : (
+          /* Real Products Grid */
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             {filteredProducts.map((product) => {
               const isPack = product.category === 'packs';
@@ -180,6 +203,7 @@ export const ProductCatalog = () => {
                     <img
                       src={product.image}
                       alt={product.name}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
                     />
 
@@ -205,7 +229,7 @@ export const ProductCatalog = () => {
                           e.stopPropagation();
                           setSelectedProductDetail(product);
                         }}
-                        className="p-2 sm:p-3 bg-white text-[#872B44] rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform"
+                        className="p-2 sm:p-3 bg-white text-[#872B44] rounded-full shadow-lg hover:scale-110 active:scale-95 transition-transform cursor-pointer"
                         title={t('quickView')}
                       >
                         <Eye className="w-4 h-4" />
@@ -260,7 +284,7 @@ export const ProductCatalog = () => {
                     {/* Price and Add CTA */}
                     <div className="pt-2 sm:pt-3 border-t border-[#F8B4C5]/20 flex items-center justify-between">
                       <div>
-                        {product.originalPrice && (
+                        {product.originalPrice && product.originalPrice > product.price && (
                           <div className="text-[10px] sm:text-xs text-[#9B7C84] line-through">
                             {product.originalPrice} DH
                           </div>
@@ -272,9 +296,9 @@ export const ProductCatalog = () => {
 
                       <button
                         onClick={(e) => handleAddToCartQuick(e, product)}
-                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold flex items-center gap-1 shadow-xs transition-all ${
+                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold flex items-center gap-1 shadow-xs transition-all cursor-pointer ${
                           isAdded
-                            ? 'bg-green-600 text-white'
+                            ? 'bg-emerald-600 text-white'
                             : 'bg-[#FFF0F4] text-[#872B44] hover:bg-[#872B44] hover:text-white'
                         }`}
                       >

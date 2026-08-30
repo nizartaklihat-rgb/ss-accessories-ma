@@ -48,39 +48,50 @@ export const StoreProvider = ({ children }) => {
     return langDict[key] || TRANSLATIONS.fr[key] || key;
   };
 
-  // 2. PRODUCTS STATE (With Supabase Cloud Sync)
+  // 2. PRODUCTS STATE (With Supabase Cloud Sync & Instant Cache)
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem('ss_accessories_products');
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      return INITIAL_PRODUCTS;
+      return [];
     }
   });
 
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [cloudStatus, setCloudStatus] = useState(isSupabaseConfigured() ? 'connected' : 'local');
 
   // Load from Supabase on mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadFromCloud = async () => {
       if (isSupabaseConfigured()) {
         setIsCloudSyncing(true);
         const cloudProducts = await fetchCloudProducts();
-        if (cloudProducts && cloudProducts.length > 0) {
-          setProducts(cloudProducts);
-          localStorage.setItem('ss_accessories_products', JSON.stringify(cloudProducts));
-        } else if (cloudProducts && cloudProducts.length === 0) {
-          // If Supabase table is empty, seed it with initial products!
-          await syncAllToCloud(products);
+        if (isMounted) {
+          if (cloudProducts && cloudProducts.length > 0) {
+            setProducts(cloudProducts);
+            localStorage.setItem('ss_accessories_products', JSON.stringify(cloudProducts));
+          }
+          setIsCloudSyncing(false);
+          setIsLoadingProducts(false);
+          setCloudStatus('connected');
         }
-        setIsCloudSyncing(false);
-        setCloudStatus('connected');
       } else {
-        setCloudStatus('local');
+        if (isMounted) {
+          setIsLoadingProducts(false);
+          setCloudStatus('local');
+        }
       }
     };
+
     loadFromCloud();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Supabase Realtime Listener (Instant update across Phone & PC)
@@ -108,7 +119,9 @@ export const StoreProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem('ss_accessories_products', JSON.stringify(products));
+      if (products.length > 0) {
+        localStorage.setItem('ss_accessories_products', JSON.stringify(products));
+      }
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
     }
@@ -168,6 +181,7 @@ export const StoreProvider = ({ children }) => {
     const defaultSettings = {
       whatsappNumber: '212617247930',
       adminPin: '1234',
+      featuredSpecialProductId: '', // Specific product ID to feature in top Hero Edition Spéciale card
       deliveryRates: {
         Casablanca: 20,
         Mohammedia: 25,
@@ -195,6 +209,13 @@ export const StoreProvider = ({ children }) => {
       console.error('Failed to save settings', e);
     }
   }, [settings]);
+
+  const setFeaturedSpecialProduct = (productId) => {
+    setSettings(prev => ({
+      ...prev,
+      featuredSpecialProductId: productId
+    }));
+  };
 
   // 6. CUSTOM PACK BUILDER STATE
   const [customPack, setCustomPack] = useState({
@@ -287,6 +308,8 @@ export const StoreProvider = ({ children }) => {
       ? `صندوق مجوهراتي المخصص (${packItems.length} قطع)`
       : `Mon Coffret Sur Mesure S&S (${packItems.length} Bijoux)`;
 
+    const defaultImage = packData.montre?.image || packData.collier?.image || packData.bracelet?.image || packData.bague?.image || '/logo.jpg';
+
     const customPackItem = {
       id: `custom-pack-${Date.now()}`,
       isCustomPack: true,
@@ -295,7 +318,7 @@ export const StoreProvider = ({ children }) => {
       price: totalPackPrice,
       originalPrice: totalPackPrice,
       quantity: 1,
-      image: packData.montre?.image || packData.collier?.image || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80',
+      image: defaultImage,
       packDetails: {
         collier: packData.collier,
         bracelet: packData.bracelet,
@@ -377,6 +400,11 @@ export const StoreProvider = ({ children }) => {
 
   const deleteProduct = async (productId) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
+
+    // If deleting the currently featured special edition product, clear the selection
+    if (settings.featuredSpecialProductId === productId) {
+      setSettings(prev => ({ ...prev, featuredSpecialProductId: '' }));
+    }
 
     // Delete from Supabase Cloud
     if (isSupabaseConfigured()) {
@@ -540,6 +568,7 @@ export const StoreProvider = ({ children }) => {
         isRTL,
         t,
         products,
+        isLoadingProducts,
         addProduct,
         editProduct,
         deleteProduct,
@@ -566,6 +595,7 @@ export const StoreProvider = ({ children }) => {
         deleteOrder,
         settings,
         setSettings,
+        setFeaturedSpecialProduct,
         // UI states
         isCartOpen,
         setIsCartOpen,

@@ -5,7 +5,8 @@ import {
   Image as ImageIcon, CheckCircle, Clock, Truck, 
   Phone, MessageSquare, Save, Settings, Package, 
   ShoppingBag, ArrowLeft, Database, Check, RefreshCw,
-  Cloud, CloudOff, AlertCircle, ExternalLink, Smartphone, Monitor
+  Cloud, CloudOff, AlertCircle, ExternalLink, Smartphone, Monitor,
+  Star, Crown, Sparkles
 } from 'lucide-react';
 import {
   saveSupabaseConfig,
@@ -29,6 +30,7 @@ export const AdminPortal = () => {
     deleteOrder,
     settings,
     setSettings,
+    setFeaturedSpecialProduct,
     closeAdminPortal,
     isCloudSyncing,
     cloudStatus,
@@ -87,11 +89,24 @@ export const AdminPortal = () => {
   const [settingsForm, setSettingsForm] = useState({
     whatsappNumber: settings.whatsappNumber || '212617247930',
     adminPin: settings.adminPin || '1234',
+    featuredSpecialProductId: settings.featuredSpecialProductId || '',
     casaFee: settings.deliveryRates?.Casablanca || 20,
     mohammediaFee: settings.deliveryRates?.Mohammedia || 25,
     autreFee: settings.deliveryRates?.Autres || 35
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    setSettingsForm(prev => ({
+      ...prev,
+      whatsappNumber: settings.whatsappNumber || '212617247930',
+      adminPin: settings.adminPin || '1234',
+      featuredSpecialProductId: settings.featuredSpecialProductId || '',
+      casaFee: settings.deliveryRates?.Casablanca || 20,
+      mohammediaFee: settings.deliveryRates?.Mohammedia || 25,
+      autreFee: settings.deliveryRates?.Autres || 35
+    }));
+  }, [settings]);
 
   // Authentication Check
   const handlePinSubmit = (e) => {
@@ -218,6 +233,7 @@ export const AdminPortal = () => {
       ...prev,
       whatsappNumber: settingsForm.whatsappNumber,
       adminPin: settingsForm.adminPin,
+      featuredSpecialProductId: settingsForm.featuredSpecialProductId,
       deliveryRates: {
         ...prev.deliveryRates,
         Casablanca: Number(settingsForm.casaFee),
@@ -227,6 +243,13 @@ export const AdminPortal = () => {
     }));
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  // Set Featured Special Product from Table
+  const handleToggleSpecialFeatured = (productId) => {
+    const newFeaturedId = settings.featuredSpecialProductId === productId ? '' : productId;
+    setFeaturedSpecialProduct(newFeaturedId);
+    setSettingsForm(prev => ({ ...prev, featuredSpecialProductId: newFeaturedId }));
   };
 
   // Save Supabase Configuration and Sync
@@ -251,7 +274,7 @@ export const AdminPortal = () => {
         } else {
           setSupabaseSyncStatus({
             loading: false,
-            message: `Connexion établie mais la table 'products' est inaccessible. Avez-vous exécuté le script SQL fourni ci-dessous ?`,
+            message: `Connexion établie mais erreur d'écriture: ${syncRes.error}`,
             type: 'error'
           });
         }
@@ -283,7 +306,7 @@ export const AdminPortal = () => {
     } else {
       setSupabaseSyncStatus({
         loading: false,
-        message: 'Échec de synchronisation. Vérifiez vos identifiants Supabase.',
+        message: `Échec de synchronisation: ${res.error}`,
         type: 'error'
       });
     }
@@ -291,6 +314,11 @@ export const AdminPortal = () => {
 
   // Stats
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+  // Active Featured Product Object
+  const currentFeaturedProduct = products.find(p => p.id === settings.featuredSpecialProductId) 
+    || products.find(p => p.category === 'packs')
+    || products[0];
 
   return (
     <div className="min-h-screen bg-[#1E1618] text-white flex flex-col font-sans">
@@ -438,7 +466,7 @@ export const AdminPortal = () => {
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
-                <span>Tarifs &amp; Paramètres</span>
+                <span>Édition Spéciale &amp; Paramètres</span>
               </button>
             </div>
 
@@ -469,24 +497,41 @@ export const AdminPortal = () => {
           {activeTab === 'products' && (
             <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto w-full">
               
-              {/* Cloud Sync Banner if not connected */}
-              {!isSupabaseConfigured() && (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-amber-900">
-                  <div className="flex items-center gap-3">
-                    <CloudOff className="w-6 h-6 text-amber-600 shrink-0" />
-                    <div className="text-xs">
-                      <strong className="block text-sm font-serif text-amber-950">
-                        Synchronisation Multi-Appareils Désactivée
-                      </strong>
-                      Vos ajouts et modifications ne sont enregistrés que sur ce navigateur. Pour modifier vos bijoux depuis votre téléphone et que votre PC se mette à jour instantanément, connectez Supabase.
+              {/* Highlight Card for Current Featured Special Edition Product */}
+              {currentFeaturedProduct && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FFF0F4] via-white to-[#FDE8EE] border-2 border-[#E5C387] shadow-sm flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-[#D4AF37] shadow-md shrink-0">
+                      <img src={currentFeaturedProduct.image} alt={currentFeaturedProduct.name} className="w-full h-full object-cover" />
+                      <div className="absolute top-0.5 right-0.5 bg-[#D4AF37] text-white p-0.5 rounded-full">
+                        <Crown className="w-3 h-3" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-[#872B44] text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Star className="w-2.5 h-2.5 fill-[#E5C387] text-[#E5C387]" />
+                          Édition Spéciale en Tête de Page Actuelle
+                        </span>
+                        <span className="text-xs font-bold text-[#872B44]">{currentFeaturedProduct.price} DH</span>
+                      </div>
+                      <h4 className="font-serif font-bold text-sm sm:text-base text-[#1E1618] mt-0.5">
+                        {currentFeaturedProduct.name}
+                      </h4>
+                      <p className="text-[11px] text-[#785C63] line-clamp-1">
+                        {currentFeaturedProduct.description || 'Ce modèle apparaît en vedette dans la bannière du haut.'}
+                      </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setActiveTab('supabase')}
-                    className="px-4 py-2 rounded-xl bg-[#872B44] text-white font-semibold text-xs shadow-xs hover:bg-[#6e2236] transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    Connecter Supabase Cloud
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveTab('settings')}
+                      className="px-3 py-1.5 rounded-xl bg-white border border-[#D4AF37] text-[#872B44] text-xs font-semibold hover:bg-[#FFF0F4] transition-all cursor-pointer"
+                    >
+                      Changer l'Édition Spéciale
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -526,79 +571,99 @@ export const AdminPortal = () => {
                         <th className="p-3.5">Nom du Bijou</th>
                         <th className="p-3.5">Catégorie</th>
                         <th className="p-3.5">Prix (DH)</th>
-                        <th className="p-3.5">Badge</th>
+                        <th className="p-3.5">En-Tête (Édition Spéciale)</th>
                         <th className="p-3.5">Disponibilité</th>
                         <th className="p-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F8B4C5]/20">
-                      {products.map((p) => (
-                        <tr key={p.id} className="hover:bg-[#FFF8FA] transition-colors">
-                          <td className="p-3.5">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-[#F8B4C5]/50 shrink-0">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                            </div>
-                          </td>
+                      {products.map((p) => {
+                        const isFeatured = settings.featuredSpecialProductId === p.id;
+                        return (
+                          <tr key={p.id} className={`transition-colors ${isFeatured ? 'bg-[#FFF5F8]' : 'hover:bg-[#FFF8FA]'}`}>
+                            <td className="p-3.5">
+                              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-[#F8B4C5]/50 shrink-0">
+                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                                {isFeatured && (
+                                  <div className="absolute top-0 right-0 bg-[#D4AF37] text-white p-0.5 rounded-bl">
+                                    <Crown className="w-2.5 h-2.5" />
+                                  </div>
+                                )}
+                              </div>
+                            </td>
 
-                          <td className="p-3.5 font-medium text-[#1E1618]">
-                            <div className="font-serif font-bold text-sm">{p.name}</div>
-                            <div className="text-[11px] text-[#785C63] line-clamp-1">{p.description}</div>
-                          </td>
+                            <td className="p-3.5 font-medium text-[#1E1618]">
+                              <div className="font-serif font-bold text-sm flex items-center gap-1.5">
+                                <span>{p.name}</span>
+                                {isFeatured && (
+                                  <span className="bg-[#E5C387]/30 text-[#872B44] border border-[#D4AF37] text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+                                    En Tête
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-[#785C63] line-clamp-1">{p.description}</div>
+                            </td>
 
-                          <td className="p-3.5 uppercase text-[11px] font-bold text-[#872B44]">
-                            {p.category}
-                          </td>
+                            <td className="p-3.5 uppercase text-[11px] font-bold text-[#872B44]">
+                              {p.category}
+                            </td>
 
-                          <td className="p-3.5 font-bold font-serif text-sm text-[#1E1618]">
-                            {p.price} DH
-                          </td>
+                            <td className="p-3.5 font-bold font-serif text-sm text-[#1E1618]">
+                              {p.price} DH
+                            </td>
 
-                          <td className="p-3.5">
-                            {p.badge ? (
-                              <span className="bg-[#FFF0F4] text-[#872B44] px-2 py-0.5 rounded-full font-semibold text-[10px] border border-[#F4A6B8]/40">
-                                {p.badge}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
+                            <td className="p-3.5">
+                              <button
+                                onClick={() => handleToggleSpecialFeatured(p.id)}
+                                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                  isFeatured
+                                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#E5C387] text-[#1E1618] shadow-xs'
+                                    : 'bg-white border border-gray-300 text-gray-600 hover:border-[#D4AF37] hover:text-[#872B44]'
+                                }`}
+                                title="Choisir ce bijou comme Édition Spéciale affichée dans la grande bannière du haut"
+                              >
+                                <Star className={`w-3.5 h-3.5 ${isFeatured ? 'fill-[#1E1618] text-[#1E1618]' : 'text-gray-400'}`} />
+                                <span>{isFeatured ? 'Édition Spéciale Active' : 'Mettre en Vedette'}</span>
+                              </button>
+                            </td>
 
-                          <td className="p-3.5">
-                            <button
-                              onClick={() => toggleProductStock(p.id)}
-                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-colors cursor-pointer ${
-                                p.inStock !== false
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : 'bg-rose-100 text-rose-800'
-                              }`}
-                            >
-                              {p.inStock !== false ? 'En Stock' : 'Épuisé'}
-                            </button>
-                          </td>
+                            <td className="p-3.5">
+                              <button
+                                onClick={() => toggleProductStock(p.id)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-colors cursor-pointer ${
+                                  p.inStock !== false
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-rose-100 text-rose-800'
+                                }`}
+                              >
+                                {p.inStock !== false ? 'En Stock' : 'Épuisé'}
+                              </button>
+                            </td>
 
-                          <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() => handleOpenEditProduct(p)}
-                              className="p-1.5 rounded-lg bg-[#FFF0F4] text-[#872B44] hover:bg-[#872B44] hover:text-white transition-colors cursor-pointer inline-flex items-center"
-                              title="Modifier"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
+                            <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
+                              <button
+                                onClick={() => handleOpenEditProduct(p)}
+                                className="p-1.5 rounded-lg bg-[#FFF0F4] text-[#872B44] hover:bg-[#872B44] hover:text-white transition-colors cursor-pointer inline-flex items-center"
+                                title="Modifier"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
 
-                            <button
-                              onClick={() => {
-                                if (confirm(`Voulez-vous supprimer "${p.name}" ?`)) {
-                                  deleteProduct(p.id);
-                                }
-                              }}
-                              className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer inline-flex items-center"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Voulez-vous supprimer "${p.name}" ?`)) {
+                                    deleteProduct(p.id);
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer inline-flex items-center"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -864,7 +929,7 @@ export const AdminPortal = () => {
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-[#E5C387] uppercase tracking-wider text-xs flex items-center gap-2">
                     <Database className="w-4 h-4" />
-                    <span>Script SQL à exécuter dans Supabase SQL Editor</span>
+                    <span>Script SQL Supabase</span>
                   </h4>
                   <button
                     onClick={() => {
@@ -969,16 +1034,85 @@ create policy "Public Storage Upload" on storage.objects for all using (bucket_i
             </div>
           )}
 
-          {/* TAB 4: SETTINGS */}
+          {/* TAB 4: SETTINGS & FEATURED SPECIAL EDITION */}
           {activeTab === 'settings' && (
-            <div className="p-4 sm:p-6 space-y-6 max-w-2xl mx-auto w-full text-xs">
+            <div className="p-4 sm:p-6 space-y-6 max-w-3xl mx-auto w-full text-xs">
+              
+              {/* SPECIAL EDITION SELECTOR CARD */}
+              <div className="bg-white p-6 sm:p-8 rounded-3xl border-2 border-[#D4AF37] shadow-sm space-y-5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#872B44] to-[#E26886] flex items-center justify-center text-[#FFF5F7] shadow-xs">
+                      <Crown className="w-5 h-5 text-[#E5C387]" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-lg text-[#1E1618]">
+                        Bijou / Coffret en « Édition Spéciale » (En-Tête)
+                      </h3>
+                      <p className="text-xs text-[#785C63]">
+                        Choisissez quel bijou ou pack apparaît dans la grande carte vedette en haut du site.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="bg-[#FFF0F4] text-[#872B44] border border-[#F4A6B8] px-3 py-1 rounded-full font-bold text-xs">
+                    Mise à Jour Directe
+                  </span>
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  <div>
+                    <label className="block font-bold uppercase tracking-wider text-[#1E1618] mb-1.5">
+                      Sélectionner le Bijou ou Coffret à mettre en Édition Spéciale :
+                    </label>
+                    <select
+                      value={settingsForm.featuredSpecialProductId}
+                      onChange={(e) => {
+                        const newId = e.target.value;
+                        setSettingsForm({ ...settingsForm, featuredSpecialProductId: newId });
+                        setFeaturedSpecialProduct(newId);
+                      }}
+                      className="w-full px-3.5 py-3 rounded-xl border-2 border-[#F4A6B8]/80 bg-[#FFF8FA] text-sm font-semibold text-[#1E1618] cursor-pointer"
+                    >
+                      <option value="">-- Par Défaut (Premier Pack de la Collection) --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>
+                          [{p.category.toUpperCase()}] {p.name} — {p.price} DH
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Live Preview of Selected Special Edition Product */}
+                  {currentFeaturedProduct && (
+                    <div className="p-4 rounded-2xl bg-[#FFF5F8] border border-[#F4A6B8]/50 flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-[#F4A6B8] shrink-0 bg-white shadow-xs">
+                        <img src={currentFeaturedProduct.image} alt={currentFeaturedProduct.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-bold text-[#872B44] uppercase tracking-wider flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-[#872B44]" />
+                          <span>Aperçu du Bijou Actuellement en Tête de Page</span>
+                        </div>
+                        <div className="font-serif font-bold text-sm text-[#1E1618] truncate mt-0.5">
+                          {currentFeaturedProduct.name}
+                        </div>
+                        <div className="text-xs font-bold text-[#872B44]">
+                          Prix affiché : {currentFeaturedProduct.price} DH {currentFeaturedProduct.originalPrice && <span className="text-gray-400 font-normal line-through ml-1">{currentFeaturedProduct.originalPrice} DH</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* General Store Settings Card */}
               <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F8B4C5]/40 shadow-xs space-y-6">
                 <div>
                   <h3 className="font-serif font-bold text-lg text-[#1E1618]">
-                    Paramètres de la Boutique S&amp;S ACCESSORIES
+                    Paramètres de la Boutique &amp; Tarifs de Livraison
                   </h3>
                   <p className="text-xs text-[#785C63]">
-                    Modifiez le numéro WhatsApp receveur, votre code PIN de sécurité et les tarifs de livraison par ville.
+                    Numéro WhatsApp de réception des commandes, code PIN administrateur et frais de livraison par ville.
                   </p>
                 </div>
 
@@ -1080,6 +1214,7 @@ create policy "Public Storage Upload" on storage.objects for all using (bucket_i
                   </button>
                 </div>
               </div>
+
             </div>
           )}
 

@@ -1,14 +1,27 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Sparkles, ShieldCheck, Truck, Gift, ArrowRight, Crown } from 'lucide-react';
+import { Sparkles, ShieldCheck, Truck, Gift, ArrowRight, Crown, Star } from 'lucide-react';
 
 export const Hero = () => {
-  const { t, isRTL, setIsPackBuilderOpen, setActiveCategoryFilter } = useStore();
+  const { 
+    t, 
+    isRTL, 
+    products, 
+    settings, 
+    setIsPackBuilderOpen, 
+    setSelectedProductDetail,
+    setActiveCategoryFilter 
+  } = useStore();
 
   const scrollToCatalog = () => {
     const el = document.getElementById('catalog-section');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Dynamically resolve the Featured Special Edition Product configured in Admin Portal
+  const featuredProduct = (settings?.featuredSpecialProductId && products.find(p => p.id === settings.featuredSpecialProductId))
+    || products.find(p => p.category === 'packs')
+    || (products.length > 0 ? products[0] : null);
 
   return (
     <section className="relative overflow-hidden pt-4 pb-12 sm:pt-8 sm:pb-16 lg:pt-12 lg:pb-24">
@@ -57,7 +70,7 @@ export const Hero = () => {
                 {/* 1. Custom Pack Builder CTA */}
                 <button
                   onClick={() => setIsPackBuilderOpen(true)}
-                  className="w-full sm:w-auto px-6 sm:px-7 py-3.5 sm:py-4 rounded-full bg-gradient-to-r from-[#872B44] via-[#A2324F] to-[#C74868] text-white font-semibold text-sm sm:text-base tracking-wide shadow-lg shadow-[#872B44]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 group"
+                  className="w-full sm:w-auto px-6 sm:px-7 py-3.5 sm:py-4 rounded-full bg-gradient-to-r from-[#872B44] via-[#A2324F] to-[#C74868] text-white font-semibold text-sm sm:text-base tracking-wide shadow-lg shadow-[#872B44]/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#FDE8EE] group-hover:rotate-12 transition-transform" />
                   <span>{t('heroCtaCustom')}</span>
@@ -69,7 +82,7 @@ export const Hero = () => {
                 {/* 2. Browse Collection CTA */}
                 <button
                   onClick={scrollToCatalog}
-                  className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-full bg-white text-[#872B44] hover:bg-[#FFF5F7] border border-[#F8B4C5]/60 font-semibold text-sm sm:text-base tracking-wide shadow-xs hover:shadow-md hover:border-[#E26886] transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-full bg-white text-[#872B44] hover:bg-[#FFF5F7] border border-[#F8B4C5]/60 font-semibold text-sm sm:text-base tracking-wide shadow-xs hover:shadow-md hover:border-[#E26886] transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>{t('heroCtaCatalog')}</span>
                   <ArrowRight className={`w-4 h-4 text-[#872B44] ${isRTL ? 'rotate-180' : ''}`} />
@@ -111,70 +124,92 @@ export const Hero = () => {
 
             </div>
 
-            {/* Visual Showcase Frame */}
+            {/* Visual Showcase Frame — DYNAMIC SPECIAL EDITION */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto max-w-sm lg:max-w-none">
                 
                 {/* Glow ring */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#E26886]/20 via-[#F8B4C5]/30 to-[#E5C387]/20 rounded-3xl blur-2xl transform rotate-2" />
                 
-                {/* Main Image Frame with Logo Stamp */}
-                <div className="relative rounded-3xl overflow-hidden border-2 border-white/80 shadow-2xl bg-[#1E1618]">
-                  <img
-                    src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=85"
-                    alt="S&S Accessories Luxury Jewelry"
-                    className="w-full h-[320px] sm:h-[420px] object-cover hover:scale-105 transition-transform duration-700"
-                  />
-                  
-                  {/* Subtle Dark Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1E1618]/90 via-[#1E1618]/25 to-transparent" />
+                {/* Main Showcase Box */}
+                {featuredProduct ? (
+                  <div 
+                    onClick={() => setSelectedProductDetail(featuredProduct)}
+                    className="relative rounded-3xl overflow-hidden border-2 border-white/80 shadow-2xl bg-[#1E1618] cursor-pointer group"
+                  >
+                    <img
+                      src={featuredProduct.image}
+                      alt={featuredProduct.name}
+                      className="w-full h-[320px] sm:h-[420px] object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    
+                    {/* Subtle Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1E1618]/90 via-[#1E1618]/25 to-transparent" />
 
-                  {/* Top Floating Logo Stamp */}
-                  <div className={`absolute top-3.5 ${isRTL ? 'right-3.5' : 'left-3.5'} flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20`}>
-                    <img src="/logo.jpg" alt="Logo" className="w-4.5 h-4.5 rounded-full" />
-                    <span className="text-[10px] font-display tracking-widest text-[#FFF5F7] font-semibold">
-                      S&amp;S ACCESSORIES
-                    </span>
-                  </div>
-
-                  {/* Top "Coffret Cadeau" Badge */}
-                  <div className={`absolute top-3.5 ${isRTL ? 'left-3.5' : 'right-3.5'} bg-[#E26886] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md`}>
-                    {t('heroFeaturedBadge')}
-                  </div>
-
-                  {/* Bottom Info inside Image */}
-                  <div className="absolute bottom-4 left-4 right-4 p-3.5 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-[#F8B4C5]/40 shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-serif font-bold text-base sm:text-lg text-[#1E1618]">
-                          {t('heroFeaturedTitle')}
-                        </div>
-                        <div className="text-[11px] text-[#544449]">
-                          {t('heroFeaturedSub')}
-                        </div>
-                      </div>
-
-                      <div className="text-right">
-                        <div className="text-[11px] text-[#9B7C84] line-through">1110 DH</div>
-                        <div className="text-base sm:text-lg font-bold text-[#872B44] font-serif">
-                          890 DH
-                        </div>
-                      </div>
+                    {/* Top Floating Logo Stamp */}
+                    <div className={`absolute top-3.5 ${isRTL ? 'right-3.5' : 'left-3.5'} flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20`}>
+                      <img src="/logo.jpg" alt="Logo" className="w-4.5 h-4.5 rounded-full" />
+                      <span className="text-[10px] font-display tracking-widest text-[#FFF5F7] font-semibold">
+                        S&amp;S ACCESSORIES
+                      </span>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        setActiveCategoryFilter('packs');
-                        scrollToCatalog();
-                      }}
-                      className="mt-2.5 w-full py-2 rounded-xl bg-[#FFF0F4] hover:bg-[#FDE8EE] text-[#872B44] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-[#F4A6B8]/40"
-                    >
-                      <span>{t('heroFeaturedBtn')}</span>
-                      <ArrowRight className={`w-3.5 h-3.5 ${isRTL ? 'rotate-180' : ''}`} />
-                    </button>
-                  </div>
+                    {/* Top "Édition Spéciale" Badge */}
+                    <div className={`absolute top-3.5 ${isRTL ? 'left-3.5' : 'right-3.5'} bg-gradient-to-r from-[#872B44] to-[#E26886] text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1 border border-white/20`}>
+                      <Star className="w-3 h-3 text-[#E5C387] fill-[#E5C387]" />
+                      <span>{featuredProduct.badge || t('heroFeaturedBadge')}</span>
+                    </div>
 
-                </div>
+                    {/* Bottom Info inside Image */}
+                    <div className="absolute bottom-4 left-4 right-4 p-3.5 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-[#F8B4C5]/40 shadow-lg">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-serif font-bold text-base sm:text-lg text-[#1E1618] truncate">
+                            {featuredProduct.name}
+                          </div>
+                          <div className="text-[11px] text-[#544449] line-clamp-1">
+                            {featuredProduct.description || featuredProduct.material || t('heroFeaturedSub')}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          {featuredProduct.originalPrice && featuredProduct.originalPrice > featuredProduct.price && (
+                            <div className="text-[11px] text-[#9B7C84] line-through">
+                              {featuredProduct.originalPrice} DH
+                            </div>
+                          )}
+                          <div className="text-base sm:text-lg font-bold text-[#872B44] font-serif">
+                            {featuredProduct.price} DH
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProductDetail(featuredProduct);
+                        }}
+                        className="mt-2.5 w-full py-2 rounded-xl bg-[#FFF0F4] hover:bg-[#FDE8EE] text-[#872B44] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 border border-[#F4A6B8]/40 cursor-pointer"
+                      >
+                        <span>{t('heroFeaturedBtn')}</span>
+                        <ArrowRight className={`w-3.5 h-3.5 ${isRTL ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+
+                  </div>
+                ) : (
+                  /* Loading / Placeholder Showcase Frame with Logo */
+                  <div className="relative rounded-3xl overflow-hidden border-2 border-white/80 shadow-2xl bg-gradient-to-br from-[#251A1E] to-[#140E10] h-[320px] sm:h-[420px] flex flex-col items-center justify-center p-6 text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full border-2 border-[#F4A6B8]/50 p-1 shadow-lg bg-black/40">
+                      <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="font-serif font-bold text-lg text-white">S&amp;S ACCESSORIES</div>
+                      <p className="text-xs text-[#FDE8EE]/70">Haute Joaillerie &bull; Casablanca</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Floating Micro Badge */}
                 <div className={`absolute -bottom-3 ${isRTL ? '-right-3' : '-left-3'} bg-white p-2.5 sm:p-3 rounded-2xl shadow-lg border border-[#F8B4C5]/40 flex items-center gap-2.5 animate-float-slow`}>
