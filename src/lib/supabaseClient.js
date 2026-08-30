@@ -50,7 +50,7 @@ export const isSupabaseConfigured = () => {
 
 export const saveSupabaseConfig = (url, key) => {
   try {
-    localStorage.setItem('ss_accessories_supabase_config', JSON.stringify({ url, key }));
+    localStorage.setItem('ss_accessories_supabase_config', JSON.stringify({ url: url.trim(), key: key.trim() }));
     supabaseInstance = null; // reset instance
     return true;
   } catch (e) {
@@ -99,8 +99,7 @@ export const fetchCloudProducts = async () => {
         image: p.image,
         stock: p.stock !== undefined ? p.stock : 10,
         inStock: p.in_stock !== false,
-        rating: p.rating || 5.0,
-        itemsIncluded: p.items_included || undefined
+        rating: p.rating || 5.0
       }));
     }
     return [];
@@ -128,8 +127,7 @@ export const upsertCloudProduct = async (product) => {
       length: product.length || '',
       image: product.image,
       stock: Number(product.stock) || 10,
-      in_stock: product.inStock !== false,
-      items_included: product.itemsIncluded || null
+      in_stock: product.inStock !== false
     };
 
     const { error } = await supabase.from('products').upsert(payload);
@@ -189,7 +187,6 @@ export const uploadCloudImage = async (file) => {
 };
 
 export const uploadImageToSupabase = uploadCloudImage;
-
 
 // 5. Fetch Orders
 export const fetchCloudOrders = async () => {
@@ -290,7 +287,7 @@ export const deleteCloudOrder = async (orderId) => {
 // 9. Sync All Initial Products into Supabase
 export const syncAllToCloud = async (productsList) => {
   const supabase = getSupabaseClient();
-  if (!supabase) return false;
+  if (!supabase) return { success: false, error: 'Supabase client non initialisé' };
 
   try {
     const payloads = productsList.map(p => ({
@@ -305,18 +302,17 @@ export const syncAllToCloud = async (productsList) => {
       length: p.length || '',
       image: p.image,
       stock: Number(p.stock) || 10,
-      in_stock: p.inStock !== false,
-      items_included: p.itemsIncluded || null
+      in_stock: p.inStock !== false
     }));
 
     const { error } = await supabase.from('products').upsert(payloads);
     if (error) {
       console.error('Supabase batch upsert error:', error.message);
-      return false;
+      return { success: false, error: error.message };
     }
-    return true;
+    return { success: true };
   } catch (e) {
     console.error('Batch sync error:', e);
-    return false;
+    return { success: false, error: e.message };
   }
 };
